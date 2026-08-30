@@ -1,14 +1,14 @@
 ---
 name: sendkit
-description: Send Telegram messages from an agent through the SendKit MCP `telegram` tool, with the SendKit CLI (`@cwa-dev/sendkit`) as a fallback. Use when a user asks to send a Telegram message, mentions SendKit, wants to interact with the SendKit toolset, asks to verify SendKit manually, or needs to choose between the SendKit MCP and CLI workflows.
+description: Send Telegram messages from an agent through the SendKit MCP `telegram` tool, with the SendKit CLI (`@sendkit/cli`) as a fallback. Use when a user asks to send a Telegram message, mentions SendKit, wants to interact with the SendKit toolset, asks to verify SendKit manually, or needs to choose between the SendKit MCP and CLI workflows.
 ---
 
 # SendKit
 
-SendKit sends Telegram messages. It exposes the same operation two ways, both backed by `@cwa-dev/sendkit-core`:
+SendKit sends Telegram messages. It exposes the same operation two ways, both backed by `@sendkit/core`:
 
 - **MCP tool** (`sendkit` server → `telegram` tool) — preferred for agents.
-- **CLI** (`@cwa-dev/sendkit`, binary `sendkit`) — fallback when MCP is unavailable or for manual verification.
+- **CLI** (`@sendkit/cli`, binary `sendkit`) — fallback when MCP is unavailable or for manual verification.
 
 Both take a `chatId` and a `message`, call the Telegram Bot API, and return `{ ok: true, chatId, messageId }`.
 
@@ -48,7 +48,7 @@ sendkit telegram <chatId> <message>
 
 On success it prints the JSON result, e.g. `{"ok":true,"chatId":"123","messageId":42}`. If no token is configured it errors with `Telegram bot token is required. Run \`sendkit init\`.`
 
-Run the CLI without a global install via `bunx @cwa-dev/sendkit telegram <chatId> <message>` (or the `npx` equivalent).
+Run the CLI without a global install via `bunx @sendkit/cli telegram <chatId> <message>` (or the `npx` equivalent).
 
 ## Verifying manually
 

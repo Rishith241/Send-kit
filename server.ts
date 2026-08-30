@@ -85,7 +85,7 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     version: "0.1.4",
-    name: "@cwa-dev/sendkit",
+    name: "@sendkit/cli",
     timestamp: new Date().toISOString(),
   });
 });
@@ -238,7 +238,7 @@ app.post("/api/cli/exec", async (req, res) => {
 
     let actualArgs = parts;
     if (main === "bunx" || main === "npx") {
-      // e.g. bunx @cwa-dev/sendkit telegram ...
+      // e.g. bunx @sendkit/cli telegram ...
       actualArgs = ["sendkit", ...parts.slice(2)];
     }
 
@@ -247,7 +247,7 @@ app.post("/api/cli/exec", async (req, res) => {
     if (sub === "--help" || sub === "-h" || sub === "help") {
       const helpText = `Usage: sendkit [options] [command]
 
-SendKit CLI backed by @cwa-dev/sendkit-core
+SendKit CLI backed by @sendkit/core
 
 Options:
   -V, --version                         output the version number (0.1.4)
@@ -294,7 +294,7 @@ Commands:
 - Version: 0.1.4
 - Config Path: ~/.config/sendkit/config.json
 - Bot Token: ${hasToken ? `${serverCliConfig.telegramBotToken.slice(0, 6)}... (configured)` : "None (Run `sendkit init`)"}
-- Core Engine: @cwa-dev/sendkit-core v0.1.4
+- Core Engine: @sendkit/core v0.1.4
 - Active Adapters: CLI, Local MCP (Stdio), Remote MCP (HTTP), Skill`,
       });
     }
@@ -305,7 +305,7 @@ Commands:
         ok: true,
         exitCode: 0,
         output: `🩺 Running SendKit Doctor Diagnostic...
-[✓] Core Package: @cwa-dev/sendkit-core ready
+[✓] Core Package: @sendkit/core ready
 [✓] Node & Runtime Environment: Compatible (ESM & CJS)
 [${hasToken ? "✓" : "!"}] Local Bot Token: ${hasToken ? "Configured in ~/.config/sendkit/config.json" : "Missing. Run `sendkit init --telegram-bot-token <token>`"}
 [✓] Telegram Bot API Connectivity: Reachable (api.telegram.org:443)
@@ -613,7 +613,7 @@ app.get("/.well-known/oauth-protected-resource/:botToken/mcp", (req, res) => {
     scopes_supported: ["sendkit:tools:call", "telegram:write"],
     response_types_supported: ["token", "code"],
     bearer_methods_supported: ["header"],
-    resource_documentation: "https://github.com/code-with-antonio/sendkit",
+    resource_documentation: "https://github.com/Rishith241/sendkit",
   });
 });
 

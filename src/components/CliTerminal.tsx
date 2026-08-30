@@ -26,7 +26,7 @@ export const CliTerminal: React.FC<CliTerminalProps> = ({ botToken }) => {
       command: 'sendkit --help',
       output: `Usage: sendkit [options] [command]
 
-SendKit CLI backed by @cwa-dev/sendkit-core
+SendKit CLI backed by @sendkit/core
 
 Options:
   -V, --version                         output the version number (0.1.4)
@@ -139,7 +139,7 @@ Commands:
           </div>
           <h2 className="text-xl font-bold text-white">Interactive CLI Emulator</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Test the <code className="text-amber-300">@cwa-dev/sendkit</code> binary with Commander argument parsing, local credential caching, and structured JSON output.
+            Test the <code className="text-amber-300">@sendkit/cli</code> binary with Commander argument parsing, local credential caching, and structured JSON output.
           </p>
         </div>
 

@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
 
             <a
-              href="https://github.com/code-with-antonio/sendkit"
+              href="https://github.com/Rishith241/sendkit"
               target="_blank"
               rel="noreferrer"
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition text-xs font-medium border border-slate-700"

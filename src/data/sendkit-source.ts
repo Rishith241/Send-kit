@@ -79,7 +79,7 @@ import { Command } from "commander";
 import { z } from "zod";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { sendTelegramMessage } from "@cwa-dev/sendkit-core";
+import { sendTelegramMessage } from "@sendkit/core";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const program = new Command();
@@ -145,7 +145,7 @@ await program.parseAsync(process.argv).catch((error: unknown) => {
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-import { telegramMessageInputSchema, sendTelegramMessage } from "@cwa-dev/sendkit-core";
+import { telegramMessageInputSchema, sendTelegramMessage } from "@sendkit/core";
 
 const server = new McpServer({
   name: "sendkit-local",
@@ -196,7 +196,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { generateClerkProtectedResourceMetadata } from "@clerk/mcp-tools/server";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
-import { sendTelegramMessage, telegramMessageInputSchema } from "@cwa-dev/sendkit-core";
+import { sendTelegramMessage, telegramMessageInputSchema } from "@sendkit/core";
 
 const clerkPublishableKey = process.env.CLERK_PUBLISHABLE_KEY;
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
@@ -309,15 +309,15 @@ app.post("/:botToken/mcp", async (c) => {
 
   skillMd: `---
 name: sendkit
-description: Send Telegram messages from an agent through the SendKit MCP \`telegram\` tool, with the SendKit CLI (\`@cwa-dev/sendkit\`) as a fallback. Use when a user asks to send a Telegram message, mentions SendKit, wants to interact with the SendKit toolset, asks to verify SendKit manually, or needs to choose between the SendKit MCP and CLI workflows.
+description: Send Telegram messages from an agent through the SendKit MCP \`telegram\` tool, with the SendKit CLI (\`@sendkit/cli\`) as a fallback. Use when a user asks to send a Telegram message, mentions SendKit, wants to interact with the SendKit toolset, asks to verify SendKit manually, or needs to choose between the SendKit MCP and CLI workflows.
 ---
 
 # SendKit
 
-SendKit sends Telegram messages. It exposes the same operation two ways, both backed by \`@cwa-dev/sendkit-core\`:
+SendKit sends Telegram messages. It exposes the same operation two ways, both backed by \`@sendkit/core\`:
 
 - **MCP tool** (\`sendkit\` server → \`telegram\` tool) — preferred for agents.
-- **CLI** (\`@cwa-dev/sendkit\`, binary \`sendkit\`) — fallback when MCP is unavailable or for manual verification.
+- **CLI** (\`@sendkit/cli\`, binary \`sendkit\`) — fallback when MCP is unavailable or for manual verification.
 
 Both take a \`chatId\` and a \`message\`, call the Telegram Bot API, and return \`{ ok: true, chatId, messageId }\`.
 
@@ -357,7 +357,7 @@ sendkit telegram <chatId> <message>
 
 On success it prints the JSON result, e.g. \`{"ok":true,"chatId":"123","messageId":42}\`. If no token is configured it errors with \`Telegram bot token is required. Run \\\`sendkit init\\\`.\`
 
-Run the CLI without a global install via \`bunx @cwa-dev/sendkit telegram <chatId> <message>\` (or the \`npx\` equivalent).`,
+Run the CLI without a global install via \`bunx @sendkit/cli telegram <chatId> <message>\` (or the \`npx\` equivalent).`,
 };
 
 export const MCP_CLIENT_CONFIGS = {
@@ -369,7 +369,7 @@ export const MCP_CLIENT_CONFIGS = {
   "mcpServers": {
     "sendkit": {
       "command": "npx",
-      "args": ["-y", "@cwa-dev/sendkit-mcp"],
+      "args": ["-y", "@sendkit/mcp"],
       "env": {
         "TELEGRAM_BOT_TOKEN": "<YOUR_TELEGRAM_BOT_TOKEN>"
       }
@@ -416,7 +416,7 @@ export const MCP_CLIENT_CONFIGS = {
   "mcpServers": {
     "sendkit": {
       "command": "npx",
-      "args": ["-y", "@cwa-dev/sendkit-mcp"],
+      "args": ["-y", "@sendkit/mcp"],
       "env": {
         "TELEGRAM_BOT_TOKEN": "<YOUR_TELEGRAM_BOT_TOKEN>"
       },
@@ -446,6 +446,6 @@ export const MCP_CLIENT_CONFIGS = {
     title: "Claude Code CLI",
     filename: "Terminal Command",
     path: "claude mcp add sendkit",
-    content: `claude mcp add sendkit -e TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>" -- npx -y @cwa-dev/sendkit-mcp`,
+    content: `claude mcp add sendkit -e TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>" -- npx -y @sendkit/mcp`,
   },
 };

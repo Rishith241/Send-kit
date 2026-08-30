@@ -21,9 +21,9 @@
 - [Architectural Philosophy](#-architectural-philosophy)
 - [Monorepo Architecture & Topology](#-monorepo-architecture--topology)
 - [Core Packages & Specifications](#-core-packages--specifications)
-  - [`@cwa-dev/sendkit-core` (Universal Schema & Engine)](#1-cwa-devsendkit-core-universal-schema--engine)
-  - [`@cwa-dev/sendkit` (CLI for Humans & Bash Sub-Agents)](#2-cwa-devsendkit-cli-for-humans--bash-sub-agents)
-  - [`@cwa-dev/sendkit-local-mcp` (Stdio JSON-RPC Server)](#3-cwa-devsendkit-local-mcp-stdio-json-rpc-server)
+  - [`@sendkit/core` (Universal Schema & Engine)](#1-sendkitcore-universal-schema--engine)
+  - [`@sendkit/cli` (CLI for Humans & Bash Sub-Agents)](#2-sendkitcli-for-humans--bash-sub-agents)
+  - [`@sendkit/mcp` (Stdio JSON-RPC Server)](#3-sendkitmcp-stdio-json-rpc-server)
   - [`apps/remote-mcp` (RFC 9470 OAuth Protected Server)](#4-appsremote-mcp-rfc-9470-oauth-protected-server)
   - [`skills/sendkit` (Standardized Agent Skill)](#5-skillssendkit-standardized-agent-skill)
 - [Interactive Developer Studio & Test Lab](#-interactive-developer-studio--test-lab)
@@ -50,7 +50,7 @@ Over time, schemas diverge, parameter validation becomes inconsistent, and agent
 
 ```
                   ┌─────────────────────────────────────────┐
-                  │       @cwa-dev/sendkit-core             │
+                  │            @sendkit/core                │
                   │  - Shared Zod Validation Schemas        │
                   │  - Business Logic & Telegram Client     │
                   │  - Standardized JSON Error Envelopes    │
@@ -59,7 +59,7 @@ Over time, schemas diverge, parameter validation becomes inconsistent, and agent
          ┌─────────────────────────────┼─────────────────────────────┐
          ▼                             ▼                             ▼
 ┌──────────────────┐         ┌───────────────────┐         ┌───────────────────┐
-│ @cwa-dev/sendkit │         │   sendkit-local   │         │ remote-mcp (HTTP) │
+│   @sendkit/cli   │         │   @sendkit/mcp    │         │ remote-mcp (HTTP) │
 │      (CLI)       │         │    (MCP Stdio)    │         │  (Clerk / OAuth)  │
 │  - Shell / CI    │         │  - Claude Desktop │         │  - Remote Agents  │
 │  - `--json` Mode │         │  - Cursor IDE     │         │  - RFC 9470 Auth  │
@@ -67,7 +67,7 @@ Over time, schemas diverge, parameter validation becomes inconsistent, and agent
 ```
 
 **SendKit establishes a strict Single Source of Truth (SSOT)**:
-- **Zero Schema Redundancy**: All parameter boundaries, coercions, and error messages are declared once in `@cwa-dev/sendkit-core` using Zod.
+- **Zero Schema Redundancy**: All parameter boundaries, coercions, and error messages are declared once in `@sendkit/core` using Zod.
 - **Protocol Independence**: Delivery layers (Stdio, HTTP, CLI flags, REST) act purely as thin serialization adapters over the core engine.
 - **Predictable Agent Fallbacks**: When an MCP connection is unavailable or restricted by sandboxing, agents seamlessly fall back to CLI invocation with identical input/output schemas.
 
@@ -80,16 +80,16 @@ The project is structured as a high-performance monorepo supporting **Bun Worksp
 ```
 sendkit/
 ├── packages/
-│   ├── core/                  # @cwa-dev/sendkit-core: Schemas, clients & types
+│   ├── core/                  # @sendkit/core: Schemas, clients & types
 │   │   ├── src/
 │   │   │   ├── schemas.ts     # Zod input/output schemas
 │   │   │   ├── client.ts      # Telegram Bot API client
 │   │   │   └── index.ts       # Public exports
 │   │   └── package.json
-│   ├── cli/                   # @cwa-dev/sendkit: Commander.js CLI binary
+│   ├── cli/                   # @sendkit/cli: Commander.js CLI binary
 │   │   ├── src/index.ts       # Commands: init, doctor, telegram, broadcast
 │   │   └── package.json
-│   └── local-mcp/             # @cwa-dev/sendkit-local-mcp: Stdio MCP Server
+│   └── local-mcp/             # @sendkit/mcp: Stdio MCP Server
 │       ├── src/index.ts       # JSON-RPC 2.0 stdio protocol handler
 │       └── package.json
 ├── apps/
@@ -110,7 +110,7 @@ sendkit/
 
 ## 📦 Core Packages & Specifications
 
-### 1. `@cwa-dev/sendkit-core` (Universal Schema & Engine)
+### 1. `@sendkit/core` (Universal Schema & Engine)
 
 The foundation module responsible for domain logic, parameter validation, and network communication.
 
@@ -129,7 +129,7 @@ The foundation module responsible for domain logic, parameter validation, and ne
 
 ---
 
-### 2. `@cwa-dev/sendkit` (CLI for Humans & Bash Sub-Agents)
+### 2. `@sendkit/cli` (CLI for Humans & Bash Sub-Agents)
 
 A compiled command-line binary built with `commander`. Designed for developer diagnostics and automated execution inside agentic sub-shells.
 
@@ -156,7 +156,7 @@ $ sendkit telegram "123456789" "Deployment successful" --json
 
 ---
 
-### 3. `@cwa-dev/sendkit-local-mcp` (Stdio JSON-RPC Server)
+### 3. `@sendkit/mcp` (Stdio JSON-RPC Server)
 
 A compliant Model Context Protocol server communicating over standard input/output (`stdio`).
 
@@ -199,7 +199,7 @@ A production-grade `SKILL.md` that instructs LLMs (Claude, Gemini, OpenAI) on to
 
 ```
 Step 1: Attempt native execution via Model Context Protocol (MCP Server).
-Step 2: If MCP is unreachable or unconfigured, execute the `@cwa-dev/sendkit` CLI via shell tool with `--json`.
+Step 2: If MCP is unreachable or unconfigured, execute the `@sendkit/cli` CLI via shell tool with `--json`.
 Step 3: If CLI binary is missing, make direct HTTPS requests to `https://api.telegram.org/bot<TOKEN>/sendMessage`.
 ```
 

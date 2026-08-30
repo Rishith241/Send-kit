@@ -1,5 +1,5 @@
 {
-  "name": "@cwa-dev/sendkit",
+  "name": "@sendkit/cli",
   "version": "0.0.0",
   "bin": {
     "sendkit": "./dist/index.js"
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "commander": "^15.0.0",
-    "@cwa-dev/sendkit-core": "workspace:*",
+    "@sendkit/core": "workspace:*",
     "zod": "^4.4.3"
   },
   "scripts": {

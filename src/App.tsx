@@ -65,7 +65,7 @@ export default function App() {
           </div>
           <div className="flex items-center space-x-4">
             <a
-              href="https://github.com/code-with-antonio/sendkit"
+              href="https://github.com/Rishith241/sendkit"
               target="_blank"
               rel="noreferrer"
               className="text-slate-400 hover:text-sky-400 transition"

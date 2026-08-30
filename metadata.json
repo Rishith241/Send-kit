@@ -2,5 +2,7 @@
   "name": "SendKit - Agent Tooling Workbench",
   "description": "Unified TypeScript core architecture for MCP Servers, CLI commands, and Agent Skills with live Telegram bot testing, MCP JSON-RPC inspector, interactive terminal, and custom operation builder.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

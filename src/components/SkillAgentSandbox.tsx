@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export const SkillAgentSandbox: React.FC = () => {
-  const [userPrompt, setUserPrompt] = useState('Send Antonio a Telegram message saying the build shipped.');
+  const [userPrompt, setUserPrompt] = useState('Send Rishith a Telegram message saying the build shipped.');
   const [mcpAvailable, setMcpAvailable] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [agentDecision, setAgentDecision] = useState<{
@@ -26,7 +26,7 @@ export const SkillAgentSandbox: React.FC = () => {
   } | null>(null);
 
   const samplePrompts = [
-    'Send Antonio a Telegram message saying the build shipped.',
+    'Send Rishith a Telegram message saying the build shipped.',
     'Alert the dev team in chat 987654321 that database migration is complete.',
     'Verify if SendKit works by sending a test message to chat 123456789 from the terminal.',
     'Send a notification to user 555000: "Deployment v2.4 passed all staging tests".',
@@ -86,14 +86,14 @@ export const SkillAgentSandbox: React.FC = () => {
         setAgentDecision({
           interfaceChosen: 'CLI',
           reason: mcpAvailable 
-            ? 'User explicitly requested terminal/CLI verification. Per SKILL.md, fallback to `@cwa-dev/sendkit` CLI with `--json` flag.' 
+            ? 'User explicitly requested terminal/CLI verification. Per SKILL.md, fallback to `@sendkit/cli` CLI with `--json` flag.' 
             : 'MCP server is disconnected in current session. Per SKILL.md, gracefully fall back to `sendkit telegram` command.',
           cliCommand: `sendkit telegram "${detectedChatId}" "${detectedMessage}" --json`,
           executionLog: [
             '1. Ingested user prompt: "' + userPrompt + '"',
             '2. Consulted SKILL.md rules for `sendkit`',
             '3. Evaluated interface availability -> MCP unavailable or explicit terminal request',
-            '4. Selected CLI fallback adapter `@cwa-dev/sendkit`',
+            '4. Selected CLI fallback adapter `@sendkit/cli`',
             '5. Appended `--json` flag for machine-readable stdout parsing',
             '6. Prepared command -> `sendkit telegram`',
           ],

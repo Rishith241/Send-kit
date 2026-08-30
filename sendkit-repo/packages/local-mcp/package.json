@@ -1,5 +1,5 @@
 {
-  "name": "@cwa-dev/sendkit-mcp",
+  "name": "@sendkit/mcp",
   "version": "0.0.1",
   "bin": {
     "sendkit-mcp": "./dist/index.js"
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@cwa-dev/sendkit-core": "workspace:*",
+    "@sendkit/core": "workspace:*",
     "zod": "^4.4.3"
   }
 }

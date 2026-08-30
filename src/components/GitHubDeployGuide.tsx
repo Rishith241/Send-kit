@@ -538,7 +538,7 @@ bun publish`;
                 </span>
                 <div>
                   <h3 className="text-sm font-bold text-white">Publishing Packages to NPM</h3>
-                  <p className="text-xs text-slate-400">Publish @cwa-dev/sendkit-core, CLI, and MCP servers</p>
+                  <p className="text-xs text-slate-400">Publish @sendkit/core, CLI, and MCP servers</p>
                 </div>
               </div>
 

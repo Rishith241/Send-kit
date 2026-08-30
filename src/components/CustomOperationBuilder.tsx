@@ -114,7 +114,7 @@ export async function ${functionName}(
 
   // Generated CLI Code
   const generatedCli = `// In packages/cli/src/index.ts
-import { ${functionName} } from "@cwa-dev/sendkit-core";
+import { ${functionName} } from "@sendkit/core";
 
 program
   .command("${toolName.replace(/_/g, '-')}")
@@ -135,7 +135,7 @@ ${parameters.map(p => `      ${p.name}: options.${p.name},`).join('\n')}
 
   // Generated Local MCP Code
   const generatedLocalMcp = `// In packages/local-mcp/src/index.ts
-import { ${toolName}InputSchema, ${functionName} } from "@cwa-dev/sendkit-core";
+import { ${toolName}InputSchema, ${functionName} } from "@sendkit/core";
 
 server.registerTool(
   "${toolName}",
