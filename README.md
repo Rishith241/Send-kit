@@ -1,79 +1,330 @@
-# SendKit Studio & Agent Tooling Framework
+<div align="center">
 
-> Build, test, and deploy agent-ready tools with one unified TypeScript core for Model Context Protocol (MCP), CLI, and AI Agent Skills.
+# ⚡ SendKit
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+### Unified Multi-Protocol Tooling Engine for Autonomous AI Agents
 
-## Overview
+*One shared TypeScript core powering Model Context Protocol (MCP), CLI automation, and Agent Skills with zero schema drift.*
 
-SendKit demonstrates the **single-source-of-truth pattern** for AI agent tooling:
-- **Core Engine (`@cwa-dev/sendkit-core`)**: Shared Zod schemas & business logic.
-- **CLI (`@cwa-dev/sendkit`)**: Command-line interface with `--json` support for bash scripts and agents.
-- **Local MCP Server (`@cwa-dev/sendkit-local-mcp`)**: Stdio JSON-RPC 2.0 server for Claude Desktop, Cursor, and OpenCode.
-- **Remote MCP Server (`apps/remote-mcp`)**: HTTP MCP endpoint with per-request Bot Token routing and Clerk OAuth (RFC 9470).
-- **Agent Skill (`skills/sendkit`)**: Standardized `SKILL.md` instructions with clear fallback logic.
+[![CI Pipeline](https://github.com/Rishith241/sendkit/actions/workflows/ci.yml/badge.svg)](https://github.com/Rishith241/sendkit/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MCP Protocol](https://img.shields.io/badge/MCP-JSON--RPC_2.0-8B5CF6?style=flat)](https://modelcontextprotocol.io/)
+[![Runtime](https://img.shields.io/badge/Runtime-Node_20+_|_Bun_1.1+-000000?style=flat&logo=bun&logoColor=white)](https://bun.sh/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](https://opensource.org/licenses/MIT)
+
+</div>
 
 ---
 
-## 🚀 Quick Start (Interactive Web Studio)
+## 📖 Table of Contents
+
+- [Architectural Philosophy](#-architectural-philosophy)
+- [Monorepo Architecture & Topology](#-monorepo-architecture--topology)
+- [Core Packages & Specifications](#-core-packages--specifications)
+  - [`@cwa-dev/sendkit-core` (Universal Schema & Engine)](#1-cwa-devsendkit-core-universal-schema--engine)
+  - [`@cwa-dev/sendkit` (CLI for Humans & Bash Sub-Agents)](#2-cwa-devsendkit-cli-for-humans--bash-sub-agents)
+  - [`@cwa-dev/sendkit-local-mcp` (Stdio JSON-RPC Server)](#3-cwa-devsendkit-local-mcp-stdio-json-rpc-server)
+  - [`apps/remote-mcp` (RFC 9470 OAuth Protected Server)](#4-appsremote-mcp-rfc-9470-oauth-protected-server)
+  - [`skills/sendkit` (Standardized Agent Skill)](#5-skillssendkit-standardized-agent-skill)
+- [Interactive Developer Studio & Test Lab](#-interactive-developer-studio--test-lab)
+- [Quick Start & Local Setup](#-quick-start--local-setup)
+- [Configuring Claude Desktop & Cursor](#-configuring-claude-desktop--cursor)
+- [Extensibility: Adding Custom Connectors](#-extensibility-adding-custom-connectors)
+- [Security & Environment Variables](#-security--environment-variables)
+- [CI/CD & Testing](#-cicd--testing)
+- [License](#-license)
+
+---
+
+## 🎯 Architectural Philosophy
+
+Building tools for modern AI agents presents a fundamental problem: **Tool Drift**.
+
+When engineering agent integrations, developers often create separate implementations for different execution contexts:
+1. A **CLI binary** with flag parsing for shell scripts.
+2. An **MCP Stdio Server** using JSON-RPC for Claude Desktop or Cursor.
+3. A **Remote HTTP MCP Server** with OAuth for web-hosted agents.
+4. A **Skill / System Prompt definition (`SKILL.md`)** guiding LLM tool selection and fallback behavior.
+
+Over time, schemas diverge, parameter validation becomes inconsistent, and agents fail unpredictably.
+
+```
+                  ┌─────────────────────────────────────────┐
+                  │       @cwa-dev/sendkit-core             │
+                  │  - Shared Zod Validation Schemas        │
+                  │  - Business Logic & Telegram Client     │
+                  │  - Standardized JSON Error Envelopes    │
+                  └────────────────────┬────────────────────┘
+                                       │
+         ┌─────────────────────────────┼─────────────────────────────┐
+         ▼                             ▼                             ▼
+┌──────────────────┐         ┌───────────────────┐         ┌───────────────────┐
+│ @cwa-dev/sendkit │         │   sendkit-local   │         │ remote-mcp (HTTP) │
+│      (CLI)       │         │    (MCP Stdio)    │         │  (Clerk / OAuth)  │
+│  - Shell / CI    │         │  - Claude Desktop │         │  - Remote Agents  │
+│  - `--json` Mode │         │  - Cursor IDE     │         │  - RFC 9470 Auth  │
+└──────────────────┘         └───────────────────┘         └───────────────────┘
+```
+
+**SendKit establishes a strict Single Source of Truth (SSOT)**:
+- **Zero Schema Redundancy**: All parameter boundaries, coercions, and error messages are declared once in `@cwa-dev/sendkit-core` using Zod.
+- **Protocol Independence**: Delivery layers (Stdio, HTTP, CLI flags, REST) act purely as thin serialization adapters over the core engine.
+- **Predictable Agent Fallbacks**: When an MCP connection is unavailable or restricted by sandboxing, agents seamlessly fall back to CLI invocation with identical input/output schemas.
+
+---
+
+## 🏗️ Monorepo Architecture & Topology
+
+The project is structured as a high-performance monorepo supporting **Bun Workspaces** and **npm/pnpm**:
+
+```
+sendkit/
+├── packages/
+│   ├── core/                  # @cwa-dev/sendkit-core: Schemas, clients & types
+│   │   ├── src/
+│   │   │   ├── schemas.ts     # Zod input/output schemas
+│   │   │   ├── client.ts      # Telegram Bot API client
+│   │   │   └── index.ts       # Public exports
+│   │   └── package.json
+│   ├── cli/                   # @cwa-dev/sendkit: Commander.js CLI binary
+│   │   ├── src/index.ts       # Commands: init, doctor, telegram, broadcast
+│   │   └── package.json
+│   └── local-mcp/             # @cwa-dev/sendkit-local-mcp: Stdio MCP Server
+│       ├── src/index.ts       # JSON-RPC 2.0 stdio protocol handler
+│       └── package.json
+├── apps/
+│   └── remote-mcp/            # Express-based HTTP MCP Server with RFC 9470 Auth
+│       ├── src/index.ts       # Protected MCP endpoint + Clerk OAuth integration
+│       └── package.json
+├── skills/
+│   └── sendkit/
+│       └── SKILL.md           # Standardized Agent Instruction Spec & Fallback Hierarchy
+├── src/                       # Interactive Developer Workbench (React + Tailwind)
+│   ├── components/            # Real-time protocol inspectors & test labs
+│   └── App.tsx
+├── .github/workflows/ci.yml   # Automated CI build & verification workflow
+└── tsconfig.json              # Shared TypeScript base configuration
+```
+
+---
+
+## 📦 Core Packages & Specifications
+
+### 1. `@cwa-dev/sendkit-core` (Universal Schema & Engine)
+
+The foundation module responsible for domain logic, parameter validation, and network communication.
+
+- **Strict Validation**: Exports Zod schemas for all actions (`telegram_send_message`, `telegram_broadcast`, `telegram_get_me`).
+- **Unified Error Handling**: Emits structured errors conforming to the standard schema:
+  ```json
+  {
+    "ok": false,
+    "error": {
+      "code": "INVALID_CHAT_ID",
+      "message": "Chat ID must be a valid numeric identifier or @channel username",
+      "retryable": false
+    }
+  }
+  ```
+
+---
+
+### 2. `@cwa-dev/sendkit` (CLI for Humans & Bash Sub-Agents)
+
+A compiled command-line binary built with `commander`. Designed for developer diagnostics and automated execution inside agentic sub-shells.
+
+#### Key Subcommands:
+- `sendkit init`: Interactively configure or verify Telegram Bot Tokens (`~/.sendkit/config.json`).
+- `sendkit doctor`: Validate environment credentials, network latency, and Telegram API availability.
+- `sendkit telegram <chatId> <message>`: Deliver a message to a specific chat, group, or channel.
+- `sendkit telegram broadcast <chatIds...> --message <text>`: Concurrent delivery across multiple targets.
+
+#### Machine-Readable Mode (`--json`):
+When invoked with `--json`, human-targeted logs are suppressed, and the process streams strictly valid JSON to `stdout` with exit code `0` for success and non-zero for failures:
+```bash
+$ sendkit telegram "123456789" "Deployment successful" --json
+{
+  "ok": true,
+  "data": {
+    "message_id": 4821,
+    "recipient": "123456789",
+    "status": "delivered",
+    "timestamp": "2026-08-30T15:45:00.000Z"
+  }
+}
+```
+
+---
+
+### 3. `@cwa-dev/sendkit-local-mcp` (Stdio JSON-RPC Server)
+
+A compliant Model Context Protocol server communicating over standard input/output (`stdio`).
+
+#### Supported MCP Methods:
+- `initialize`: Protocol negotiation, capability declaration, and server metadata.
+- `tools/list`: Exposes tools matching core schemas with full JSON Schema specifications.
+- `tools/call`: Executes operations (`send_telegram_message`, `verify_bot_credentials`) and returns standard MCP content envelopes (`type: "text"`).
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "method": "tools/call",
+  "params": {
+    "name": "send_telegram_message",
+    "arguments": {
+      "chat_id": "123456789",
+      "text": "Alert: Database CPU utilization > 90%",
+      "parse_mode": "HTML"
+    }
+  }
+}
+```
+
+---
+
+### 4. `apps/remote-mcp` (RFC 9470 OAuth Protected Server)
+
+An HTTP MCP server engineered for cloud agents and multi-tenant platforms.
+
+- **Stateless Token Routing**: Accepts bot tokens via `X-Telegram-Bot-Token` header or within tool call arguments.
+- **RFC 9470 Protected Resource Metadata**: Advertises authorization servers via `/.well-known/oauth-protected-resource`.
+- **Clerk Authentication**: Validates JWT bearer tokens against Clerk OAuth JWKS for secure team-level access.
+
+---
+
+### 5. `skills/sendkit` (Standardized Agent Skill)
+
+A production-grade `SKILL.md` that instructs LLMs (Claude, Gemini, OpenAI) on tool selection, parameter formatting, and progressive fallback execution:
+
+```
+Step 1: Attempt native execution via Model Context Protocol (MCP Server).
+Step 2: If MCP is unreachable or unconfigured, execute the `@cwa-dev/sendkit` CLI via shell tool with `--json`.
+Step 3: If CLI binary is missing, make direct HTTPS requests to `https://api.telegram.org/bot<TOKEN>/sendMessage`.
+```
+
+---
+
+## 🧪 Interactive Developer Studio & Test Lab
+
+This repository includes a developer workbench for live protocol testing and verification:
+
+1. **Telegram API Lab**: Test live BotFather tokens, check bot identity (`getMe`), and send real-time test payloads.
+2. **MCP Protocol Inspector**: Interactive JSON-RPC 2.0 terminal simulating client-server handshakes, listing tool schemas, and debugging `tools/call` envelopes.
+3. **CLI Terminal Emulator**: Browser-based shell simulator for testing `sendkit init`, `sendkit doctor`, and flags.
+4. **Remote MCP & Clerk Hub**: Test RFC 9470 OAuth metadata endpoints and generate ready-to-use client connection snippets.
+5. **Custom Connector Builder**: 5-layer synchronized code generator that outputs TypeScript schemas, CLI commands, MCP handlers, and SKILL documentation for any custom webhook or API.
+
+---
+
+## 🚀 Quick Start & Local Setup
+
+### Prerequisites
+- Node.js 20.x or higher (or Bun 1.1+)
+- Git
+
+### 1. Clone & Install Dependencies
 
 ```bash
-# 1. Install dependencies
+# Clone the repository
+git clone https://github.com/Rishith241/sendkit.git
+cd sendkit
+
+# Install dependencies across all packages
 npm install
+# or with bun:
+# bun install
+```
 
-# 2. Start development server
+### 2. Start the Interactive Workbench
+
+```bash
 npm run dev
+```
 
-# 3. Build for production
+Open `http://localhost:3000` in your browser to access the test suite and protocol inspector.
+
+### 3. Build for Production
+
+```bash
 npm run build
 ```
 
-Open `http://localhost:3000` to access the interactive workbench with:
-- **Telegram Bot Test Lab**: Real-time BotFather token verification and message delivery.
-- **MCP Protocol Inspector**: JSON-RPC 2.0 tool execution (`initialize`, `tools/list`, `tools/call`).
-- **CLI Terminal**: In-browser emulator for `sendkit doctor`, `sendkit init`, `sendkit telegram`.
-- **Remote MCP & Clerk OAuth**: RFC 9470 protected resource tester and client config generator.
-- **Custom Tool Builder**: Generate 5 synchronized architecture layers for any custom webhook/API.
-- **Agent Skill Sandbox**: Live LLM reasoning simulation.
-
 ---
 
-## 📦 Deploying to GitHub
+## ⚙️ Configuring Claude Desktop & Cursor
 
-### Method : Git Command Line
-```bash
-# 1. Initialize local repository
-git init
-git add .
-git commit -m "feat: initialize SendKit agent tooling framework"
+To connect SendKit's Local MCP Server to your AI coding assistants:
 
-# 2. Add GitHub remote
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo-name>.git
+### Claude Desktop Configuration
+Add the server to your `claude_desktop_config.json`:
 
-# 3. Push to GitHub
-git push -u origin main
+```json
+{
+  "mcpServers": {
+    "sendkit": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/sendkit/sendkit-repo/packages/local-mcp/dist/index.js"
+      ],
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_botfather_token_here"
+      }
+    }
+  }
+}
 ```
 
+### Cursor IDE Configuration
+In **Cursor Settings → Features → MCP**:
+- **Name**: `sendkit`
+- **Type**: `command`
+- **Command**: `node /absolute/path/to/sendkit/sendkit-repo/packages/local-mcp/dist/index.js`
+
 ---
 
-## 🛠️ Testing SendKit CLI Directly
+## 🔌 Extensibility: Adding Custom Connectors
+
+SendKit's architecture makes it easy to add new notification channels (Discord, Slack, Twilio, SendGrid):
+
+1. **Define Schema** in `packages/core/src/schemas.ts`:
+   ```typescript
+   export const SendDiscordMessageSchema = z.object({
+     webhook_url: z.string().url(),
+     content: z.string().min(1).max(2000),
+     username: z.string().optional(),
+   });
+   ```
+2. **Implement Client** in `packages/core/src/client.ts`.
+3. **Register Command** in `packages/cli/src/index.ts`.
+4. **Export MCP Tool** in `packages/local-mcp/src/index.ts`.
+
+---
+
+## 🔐 Security & Environment Variables
+
+| Variable | Scope | Description |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | Core / Local MCP / CLI | Telegram BotFather API authentication token |
+| `CLERK_SECRET_KEY` | Remote MCP | Clerk backend authentication secret for RFC 9470 verification |
+| `PORT` | Web Studio / Remote MCP | Server listening port (default: `3000`) |
+
+---
+
+## 🚦 CI/CD & Testing
+
+Automated testing is executed via GitHub Actions on every push and pull request:
+- Type checking across all workspace packages (`tsc --noEmit`).
+- Monorepo package dependency validation.
+- Production bundle verification.
 
 ```bash
-# Global installation
-npm install -g @cwa-dev/sendkit
-
-# Initialize bot token
-sendkit init --telegram-bot-token "<your-bot-token>"
-
-# Send message
-sendkit telegram "<chat-id>" "Hello from SendKit" --json
-
-# Run doctor diagnostic
-sendkit doctor
+# Run local verification
+npm run build
 ```
 
 ---
 
 ## 📄 License
-MIT License.
+
+Distributed under the **MIT License**. See `LICENSE` for details.
