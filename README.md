@@ -39,7 +39,7 @@ Open `http://localhost:3000` to access the interactive workbench with:
 ---
 
 ## 📦 Deploying to GitHub
-2
+
 ### Method : Git Command Line
 ```bash
 # 1. Initialize local repository
