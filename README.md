@@ -40,11 +40,6 @@ Open `http://localhost:3000` to access the interactive workbench with:
 
 ## 📦 Deploying to GitHub
 
-### Method 1: 1-Click AI Studio Export (Fastest)
-1. In the AI Studio interface, open the **Project Settings / Export** menu.
-2. Select **Export to GitHub**.
-3. Choose your GitHub account and repository name to push all code automatically.
-
 ### Method 2: Git Command Line
 ```bash
 # 1. Initialize local repository
