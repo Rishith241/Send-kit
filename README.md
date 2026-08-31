@@ -24,7 +24,7 @@
   - [`@sendkit/core` (Universal Schema & Engine)](#1-sendkitcore-universal-schema--engine)
   - [`@sendkit/cli` (CLI for Humans & Bash Sub-Agents)](#2-sendkitcli-for-humans--bash-sub-agents)
   - [`@sendkit/mcp` (Stdio JSON-RPC Server)](#3-sendkitmcp-stdio-json-rpc-server)
-  - [`apps/remote-mcp` (RFC 9470 OAuth Protected Server)](#4-appsremote-mcp-rfc-9470-oauth-protected-server)
+  - [`apps/remote-mcp` (RFC 9728 OAuth Protected Server)](#4-appsremote-mcp-rfc-9728-oauth-protected-server)
   - [`skills/sendkit` (Standardized Agent Skill)](#5-skillssendkit-standardized-agent-skill)
 - [Interactive Developer Studio & Test Lab](#-interactive-developer-studio--test-lab)
 - [Quick Start & Local Setup](#-quick-start--local-setup)
@@ -62,7 +62,7 @@ Over time, schemas diverge, parameter validation becomes inconsistent, and agent
 │   @sendkit/cli   │         │   @sendkit/mcp    │         │ remote-mcp (HTTP) │
 │      (CLI)       │         │    (MCP Stdio)    │         │  (Clerk / OAuth)  │
 │  - Shell / CI    │         │  - Claude Desktop │         │  - Remote Agents  │
-│  - `--json` Mode │         │  - Cursor IDE     │         │  - RFC 9470 Auth  │
+│  - `--json` Mode │         │  - Cursor IDE     │         │  - RFC 9728 Auth  │
 └──────────────────┘         └───────────────────┘         └───────────────────┘
 ```
 
@@ -93,7 +93,7 @@ sendkit/
 │       ├── src/index.ts       # JSON-RPC 2.0 stdio protocol handler
 │       └── package.json
 ├── apps/
-│   └── remote-mcp/            # Express-based HTTP MCP Server with RFC 9470 Auth
+│   └── remote-mcp/            # Express-based HTTP MCP Server with RFC 9728 Auth
 │       ├── src/index.ts       # Protected MCP endpoint + Clerk OAuth integration
 │       └── package.json
 ├── skills/
@@ -183,12 +183,12 @@ A compliant Model Context Protocol server communicating over standard input/outp
 
 ---
 
-### 4. `apps/remote-mcp` (RFC 9470 OAuth Protected Server)
+### 4. `apps/remote-mcp` (RFC 9728 OAuth Protected Server)
 
 An HTTP MCP server engineered for cloud agents and multi-tenant platforms.
 
 - **Stateless Token Routing**: Accepts bot tokens via `X-Telegram-Bot-Token` header or within tool call arguments.
-- **RFC 9470 Protected Resource Metadata**: Advertises authorization servers via `/.well-known/oauth-protected-resource`.
+- **RFC 9728 Protected Resource Metadata**: Advertises authorization servers via `/.well-known/oauth-protected-resource`.
 - **Clerk Authentication**: Validates JWT bearer tokens against Clerk OAuth JWKS for secure team-level access.
 
 ---
@@ -212,7 +212,7 @@ This repository includes a developer workbench for live protocol testing and ver
 1. **Telegram API Lab**: Test live BotFather tokens, check bot identity (`getMe`), and send real-time test payloads.
 2. **MCP Protocol Inspector**: Interactive JSON-RPC 2.0 terminal simulating client-server handshakes, listing tool schemas, and debugging `tools/call` envelopes.
 3. **CLI Terminal Emulator**: Browser-based shell simulator for testing `sendkit init`, `sendkit doctor`, and flags.
-4. **Remote MCP & Clerk Hub**: Test RFC 9470 OAuth metadata endpoints and generate ready-to-use client connection snippets.
+4. **Remote MCP & Clerk Hub**: Test RFC 9728 OAuth metadata endpoints and generate ready-to-use client connection snippets.
 5. **Custom Connector Builder**: 5-layer synchronized code generator that outputs TypeScript schemas, CLI commands, MCP handlers, and SKILL documentation for any custom webhook or API.
 
 ---
@@ -306,7 +306,7 @@ SendKit's architecture makes it easy to add new notification channels (Discord, 
 | Variable | Scope | Description |
 |---|---|---|
 | `TELEGRAM_BOT_TOKEN` | Core / Local MCP / CLI | Telegram BotFather API authentication token |
-| `CLERK_SECRET_KEY` | Remote MCP | Clerk backend authentication secret for RFC 9470 verification |
+| `CLERK_SECRET_KEY` | Remote MCP | Clerk backend authentication secret for RFC 9728 verification |
 | `PORT` | Web Studio / Remote MCP | Server listening port (default: `3000`) |
 
 ---

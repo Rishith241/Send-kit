@@ -102,7 +102,7 @@ export const RemoteMcpExplorer: React.FC<RemoteMcpExplorerProps> = ({ botToken }
           </div>
           <h2 className="text-xl font-bold text-white">Remote HTTP MCP Endpoint & OAuth Protection</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Explore <code className="text-teal-300">apps/remote-mcp</code> with per-request Bot Token path routing (<code className="text-teal-300">POST /:botToken/mcp</code>) and Clerk OAuth RFC 9470 protected resource metadata.
+            Explore <code className="text-teal-300">apps/remote-mcp</code> with per-request Bot Token path routing (<code className="text-teal-300">POST /:botToken/mcp</code>) and Clerk OAuth RFC 9728 protected resource metadata.
           </p>
         </div>
 

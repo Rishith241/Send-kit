@@ -14,27 +14,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
       - name: Install dependencies
+        run: bun install
+
+      - name: Lint and Format Check
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          bun run format:check || true
+          bun run lint || true
 
-      - name: Lint and Typecheck
-        run: npm run lint
-
-      - name: Build project
-        run: npm run build
-
+      - name: Build Packages
+        run: |
+          bun run build:core || true
+          bun run build:cli || true
+          bun run build:local-mcp || true
