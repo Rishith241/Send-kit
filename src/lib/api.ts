@@ -59,3 +59,46 @@ export async function executeCliCommand(command: string): Promise<{ ok: boolean;
     };
   }
 }
+
+export async function testGithubToken(githubToken: string): Promise<{ ok: boolean; user?: any; error?: string; simulated?: boolean }> {
+  try {
+    const res = await fetch('/api/github/test-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ githubToken }),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { ok: false, error: err.message || 'Failed to verify GitHub token' };
+  }
+}
+
+export async function createGithubIssueApi(params: {
+  githubToken?: string;
+  repo: string;
+  title: string;
+  body?: string;
+  labels?: string[];
+}): Promise<{
+  ok: boolean;
+  issueNumber?: number;
+  issueUrl?: string;
+  repo?: string;
+  title?: string;
+  state?: string;
+  error?: string;
+  simulated?: boolean;
+  rawResponse?: any;
+}> {
+  try {
+    const res = await fetch('/api/github/create-issue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { ok: false, error: err.message || 'Failed to create GitHub issue' };
+  }
+}
+

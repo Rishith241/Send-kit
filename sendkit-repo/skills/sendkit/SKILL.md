@@ -1,29 +1,25 @@
 ---
 name: sendkit
-description: Send Telegram messages from an agent through the SendKit MCP `telegram` tool, with the SendKit CLI (`@sendkit/cli`) as a fallback. Use when a user asks to send a Telegram message, mentions SendKit, wants to interact with the SendKit toolset, asks to verify SendKit manually, or needs to choose between the SendKit MCP and CLI workflows.
+description: Send Telegram messages and create GitHub issues from an autonomous agent through the SendKit MCP toolset (`telegram`, `github_issue`), with the SendKit CLI (`@sendkit/cli`) as a fallback. Use when a user asks to send a Telegram message, file a GitHub bug/issue, mentions SendKit, wants to interact with the SendKit toolset, asks to verify SendKit manually, or needs to choose between the SendKit MCP and CLI workflows.
 ---
 
 # SendKit
 
-SendKit sends Telegram messages. It exposes the same operation two ways, both backed by `@sendkit/core`:
+SendKit provides agentic communication and developer automation tools. It exposes operations through a unified core (`@sendkit/core`):
 
-- **MCP tool** (`sendkit` server → `telegram` tool) — preferred for agents.
-- **CLI** (`@sendkit/cli`, binary `sendkit`) — fallback when MCP is unavailable or for manual verification.
+1. **Telegram Messenger** (`telegram` tool / `sendkit telegram` CLI) — Delivers messages to Telegram chats via BotFather API.
+2. **GitHub Issue Creator** (`github_issue` tool / `sendkit github-issue` CLI) — Automates filing issues and bugs into GitHub repositories.
 
-Both take a `chatId` and a `message`, call the Telegram Bot API, and return `{ ok: true, chatId, messageId }`.
+All operations follow a dual-interface architecture:
+- **MCP tool** (`sendkit` server → `telegram`, `github_issue` tools) — preferred for agents.
+- **CLI** (`@sendkit/cli`, binary `sendkit`) — fallback when MCP is unavailable, in CI scripts, or for manual verification.
 
-## Choosing MCP vs CLI
+---
 
-Prefer the **MCP tool** whenever the `sendkit` MCP server is connected — it needs no shell and the bot token is supplied by the MCP client environment.
+## 1. Telegram Tooling Workflow
 
-Use the **CLI** when:
-- The MCP server is not connected in this session.
-- Verifying behavior manually or from a script / terminal.
-- A local bot token (not the MCP env token) should be used.
-
-## MCP workflow (preferred)
-
-Call the `telegram` tool on the `sendkit` MCP server with:
+### MCP Tool: `telegram` (Preferred)
+Call `telegram` on the `sendkit` MCP server with:
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
@@ -32,30 +28,41 @@ Call the `telegram` tool on the `sendkit` MCP server with:
 
 The bot token is read from `TELEGRAM_BOT_TOKEN` in the MCP server environment (see `.mcp.json`) — do not pass it in the tool input. On success the tool returns `{ ok: true, chatId, messageId }`.
 
-## CLI workflow (fallback)
-
-First-time setup writes a token to `~/.config/sendkit/config.json` (mode `0600`):
-
+### CLI Workflow (Fallback)
 ```bash
 sendkit init --telegram-bot-token <botToken>
+sendkit telegram <chatId> <message> --json
 ```
 
-Send a message:
+---
 
+## 2. GitHub Issue Creator Workflow
+
+### MCP Tool: `github_issue` (Preferred)
+Call `github_issue` on the `sendkit` MCP server with:
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `repo` | string | yes | GitHub repository in `owner/repo` format (e.g. `Rishith241/sendkit`) |
+| `title` | string | yes | Issue title (non-empty) |
+| `body` | string | no | Markdown body content or bug report |
+| `labels` | string[] | no | Array of label strings, e.g. `["bug", "agent"]` |
+
+The token is read from `GITHUB_TOKEN` in the environment. On success returns `{ ok: true, issueNumber: 42, issueUrl: "...", repo: "...", title: "...", state: "open" }`.
+
+### CLI Workflow (Fallback)
 ```bash
-sendkit telegram <chatId> <message>
+sendkit init --github-token <githubToken>
+sendkit github-issue "Rishith241/sendkit" "Bug: Failed sync" "Agent encountered error." --labels bug --json
 ```
 
-On success it prints the JSON result, e.g. `{"ok":true,"chatId":"123","messageId":42}`. If no token is configured it errors with `Telegram bot token is required. Run \`sendkit init\`.`
+---
 
-Run the CLI without a global install via `bunx @sendkit/cli telegram <chatId> <message>` (or the `npx` equivalent).
+## Choosing MCP vs CLI
 
-## Verifying manually
+Prefer the **MCP tool** whenever the `sendkit` MCP server is connected — it needs no shell and tokens are supplied by the client environment.
 
-To confirm SendKit works end to end, send a test message to a known chat ID and check the response includes `ok: true` and a numeric `messageId`. Use the CLI for this so the result JSON is visible in the terminal:
-
-```bash
-sendkit telegram <yourChatId> "SendKit test message"
-```
-
-A non-`ok` response or a thrown error surfaces the Telegram API `description` (e.g. invalid token, unknown chat ID).
+Use the **CLI** when:
+- The MCP server is not connected in this session.
+- Running inside CI/CD shell scripts or automated cron jobs.
+- Verifying behavior manually or from a script / terminal.

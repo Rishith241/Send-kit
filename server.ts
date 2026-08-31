@@ -18,9 +18,10 @@ app.use(express.json());
 // In-memory simulated CLI config cache per instance
 let serverCliConfig = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
+  githubToken: process.env.GITHUB_TOKEN || "",
 };
 
-// Registered tools in memory (starts with core telegram tool)
+// Registered tools in memory (starts with core telegram tool and github issue creator)
 interface ToolDefinition {
   name: string;
   title: string;
@@ -47,6 +48,17 @@ const customTools: ToolDefinition[] = [
     ],
   },
   {
+    name: "github_issue",
+    title: "GitHub Issue Creator",
+    description: "Create an issue in a GitHub repository using Personal Access Token.",
+    category: "Developer Tools",
+    parameters: [
+      { name: "repo", type: "string", description: "Repository in 'owner/repo' format", required: true },
+      { name: "title", type: "string", description: "Issue title", required: true },
+      { name: "body", type: "string", description: "Markdown body description", required: false },
+    ],
+  },
+  {
     name: "discord_webhook",
     title: "Discord Webhook",
     description: "Send rich embed notifications to a Discord channel via webhook URL.",
@@ -65,17 +77,6 @@ const customTools: ToolDefinition[] = [
     parameters: [
       { name: "webhookUrl", type: "string", description: "Slack Incoming Webhook URL", required: true },
       { name: "text", type: "string", description: "Message payload", required: true },
-    ],
-  },
-  {
-    name: "github_issue",
-    title: "GitHub Issue Creator",
-    description: "Create an issue in a GitHub repository using Personal Access Token.",
-    category: "Developer Tools",
-    parameters: [
-      { name: "repo", type: "string", description: "Repository (owner/repo)", required: true },
-      { name: "title", type: "string", description: "Issue title", required: true },
-      { name: "body", type: "string", description: "Issue markdown body", required: false },
     ],
   },
 ];
@@ -216,6 +217,170 @@ app.post("/api/telegram/send", async (req, res) => {
   }
 });
 
+// 3b. GitHub User / Token verification
+app.post("/api/github/test-token", async (req, res) => {
+  try {
+    const { githubToken } = req.body;
+    if (!githubToken || typeof githubToken !== "string") {
+      return res.status(400).json({ ok: false, error: "GitHub token is required" });
+    }
+
+    const cleanToken = githubToken.trim();
+    if (cleanToken === "demo_github_token" || cleanToken.startsWith("sim_")) {
+      return res.json({
+        ok: true,
+        simulated: true,
+        user: {
+          login: "octocat-agent",
+          id: 583231,
+          name: "SendKit Autonomous Agent",
+          avatar_url: "https://avatars.githubusercontent.com/u/583231?v=4",
+          scopes: ["repo", "issues:write"],
+        },
+      });
+    }
+
+    const ghResponse = await fetch("https://api.github.com/user", {
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Authorization": `Bearer ${cleanToken}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "SendKit-Studio/0.1.4",
+      },
+    });
+
+    const data = await ghResponse.json();
+    if (!ghResponse.ok) {
+      return res.status(ghResponse.status).json({
+        ok: false,
+        error: data.message || "Failed to verify GitHub Personal Access Token",
+      });
+    }
+
+    const scopesHeader = ghResponse.headers.get("x-oauth-scopes") || "";
+    const scopes = scopesHeader ? scopesHeader.split(",").map((s) => s.trim()) : [];
+
+    res.json({
+      ok: true,
+      user: {
+        login: data.login,
+        id: data.id,
+        name: data.name || data.login,
+        avatar_url: data.avatar_url,
+        scopes,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ ok: false, error: error.message || "Network request failed" });
+  }
+});
+
+// 3c. GitHub Create Issue
+app.post("/api/github/create-issue", async (req, res) => {
+  try {
+    const { githubToken, repo, title, body, labels } = req.body;
+
+    if (!repo || !title) {
+      return res.status(400).json({
+        ok: false,
+        error: "Missing required parameters: 'repo' (owner/repo) and 'title' are required.",
+      });
+    }
+
+    const cleanToken = (githubToken || serverCliConfig.githubToken || process.env.GITHUB_TOKEN || "").trim();
+    const cleanRepo = String(repo).trim();
+    const cleanTitle = String(title).trim();
+    const cleanBody = body ? String(body).trim() : undefined;
+    const cleanLabels = Array.isArray(labels) ? labels.map(String) : undefined;
+
+    const parts = cleanRepo.split("/");
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      return res.status(400).json({
+        ok: false,
+        error: `Invalid repository format '${cleanRepo}'. Must be 'owner/repo', e.g. 'Rishith241/sendkit'.`,
+      });
+    }
+    const [owner, repoName] = parts;
+
+    // If simulated
+    if (!cleanToken || cleanToken === "demo_github_token" || cleanToken.startsWith("sim_")) {
+      const mockIssueNum = Math.floor(10 + Math.random() * 90);
+      return res.json({
+        ok: true,
+        issueNumber: mockIssueNum,
+        issueUrl: `https://github.com/${owner}/${repoName}/issues/${mockIssueNum}`,
+        repo: cleanRepo,
+        title: cleanTitle,
+        state: "open",
+        simulated: true,
+        rawResponse: {
+          id: 198234812,
+          number: mockIssueNum,
+          title: cleanTitle,
+          body: cleanBody || "",
+          state: "open",
+          html_url: `https://github.com/${owner}/${repoName}/issues/${mockIssueNum}`,
+          labels: cleanLabels || ["bug", "agent-reported"],
+          created_at: new Date().toISOString(),
+          user: { login: "sendkit-agent" },
+        },
+      });
+    }
+
+    const ghResponse = await fetch(`https://api.github.com/repos/${owner}/${repoName}/issues`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Authorization": `Bearer ${cleanToken}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "SendKit-Studio/0.1.4",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: cleanTitle,
+        body: cleanBody,
+        labels: cleanLabels,
+      }),
+    });
+
+    const data = await ghResponse.json();
+
+    if (!ghResponse.ok) {
+      let friendlyError = data.message || `GitHub error ${ghResponse.status}`;
+      if (ghResponse.status === 401) {
+        friendlyError = "GitHub authentication failed (HTTP 401). Invalid or expired personal access token.";
+      } else if (ghResponse.status === 403) {
+        friendlyError = `GitHub permission denied (HTTP 403). Ensure your token has 'issues:write' or 'repo' scope. ${data.message || ""}`;
+      } else if (ghResponse.status === 404) {
+        friendlyError = `Repository '${cleanRepo}' not found (HTTP 404). Check spelling or verify token permissions for private repositories.`;
+      } else if (ghResponse.status === 422) {
+        friendlyError = `GitHub issue validation failed (HTTP 422): ${data.message || "Invalid payload"}`;
+      }
+
+      return res.status(ghResponse.status).json({
+        ok: false,
+        error: friendlyError,
+        rawResponse: data,
+      });
+    }
+
+    return res.json({
+      ok: true,
+      issueNumber: data.number,
+      issueUrl: data.html_url,
+      repo: cleanRepo,
+      title: data.title,
+      state: data.state,
+      rawResponse: data,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message || "Failed to create GitHub issue",
+    });
+  }
+});
+
 // 4. CLI Command Emulator API
 app.post("/api/cli/exec", async (req, res) => {
   try {
@@ -238,7 +403,6 @@ app.post("/api/cli/exec", async (req, res) => {
 
     let actualArgs = parts;
     if (main === "bunx" || main === "npx") {
-      // e.g. bunx @sendkit/cli telegram ...
       actualArgs = ["sendkit", ...parts.slice(2)];
     }
 
@@ -254,8 +418,9 @@ Options:
   -h, --help                            display help for command
 
 Commands:
-  init --telegram-bot-token <botToken>  Configure SendKit CLI local settings
-  telegram [options] <chatId> <message> Send a Telegram message
+  init [options]                        Configure SendKit CLI local settings & tokens
+  telegram [options] <chatId> <msg>     Send a Telegram message
+  github-issue [options] <repo> <title> Create a GitHub issue in owner/repo
   status                                Inspect active CLI configuration & bot info
   doctor                                Diagnose network, token permissions, and environment
   list-tools                            Display all registered Core tools and adapters
@@ -269,46 +434,64 @@ Commands:
 
     if (sub === "init") {
       const tokenIndex = actualArgs.indexOf("--telegram-bot-token");
-      if (tokenIndex === -1 || !actualArgs[tokenIndex + 1]) {
+      const ghIndex = actualArgs.indexOf("--github-token");
+
+      if (tokenIndex === -1 && ghIndex === -1) {
         return res.json({
           ok: false,
           exitCode: 1,
-          output: "error: required option '--telegram-bot-token <botToken>' not specified",
+          output: "error: please specify at least one credential flag: --telegram-bot-token <token> or --github-token <token>",
         });
       }
-      const token = actualArgs[tokenIndex + 1];
-      serverCliConfig.telegramBotToken = token;
+
+      const updates: string[] = [];
+      if (tokenIndex !== -1 && actualArgs[tokenIndex + 1]) {
+        const token = actualArgs[tokenIndex + 1];
+        serverCliConfig.telegramBotToken = token;
+        updates.push(`Telegram Bot Token: ${token.slice(0, 5)}...${token.slice(-4)}`);
+      }
+      if (ghIndex !== -1 && actualArgs[ghIndex + 1]) {
+        const token = actualArgs[ghIndex + 1];
+        serverCliConfig.githubToken = token;
+        updates.push(`GitHub Token: ${token.slice(0, 5)}...${token.slice(-4)}`);
+      }
+
       return res.json({
         ok: true,
         exitCode: 0,
-        output: `Saved SendKit CLI config to ~/.config/sendkit/config.json\nMode: 0600 (encrypted credentials cache)\nToken set: ${token.slice(0, 5)}...${token.slice(-4)}`,
+        output: `Saved SendKit CLI config to ~/.config/sendkit/config.json\nMode: 0600 (encrypted credentials cache)\n${updates.join("\n")}`,
       });
     }
 
     if (sub === "status") {
-      const hasToken = !!serverCliConfig.telegramBotToken;
+      const hasTg = !!serverCliConfig.telegramBotToken;
+      const hasGh = !!serverCliConfig.githubToken;
       return res.json({
         ok: true,
         exitCode: 0,
         output: `SendKit CLI Status:
 - Version: 0.1.4
 - Config Path: ~/.config/sendkit/config.json
-- Bot Token: ${hasToken ? `${serverCliConfig.telegramBotToken.slice(0, 6)}... (configured)` : "None (Run `sendkit init`)"}
+- Telegram Token: ${hasTg ? `${serverCliConfig.telegramBotToken.slice(0, 6)}... (configured)` : "None (Run `sendkit init --telegram-bot-token <token>`)"}
+- GitHub Token: ${hasGh ? `${serverCliConfig.githubToken.slice(0, 6)}... (configured)` : "None (Run `sendkit init --github-token <token>`)"}
 - Core Engine: @sendkit/core v0.1.4
-- Active Adapters: CLI, Local MCP (Stdio), Remote MCP (HTTP), Skill`,
+- Registered Tools: telegram, github_issue`,
       });
     }
 
     if (sub === "doctor") {
-      const hasToken = !!serverCliConfig.telegramBotToken;
+      const hasTg = !!serverCliConfig.telegramBotToken;
+      const hasGh = !!serverCliConfig.githubToken;
       return res.json({
         ok: true,
         exitCode: 0,
         output: `🩺 Running SendKit Doctor Diagnostic...
-[✓] Core Package: @sendkit/core ready
+[✓] Core Package: @sendkit/core ready (v0.1.4)
 [✓] Node & Runtime Environment: Compatible (ESM & CJS)
-[${hasToken ? "✓" : "!"}] Local Bot Token: ${hasToken ? "Configured in ~/.config/sendkit/config.json" : "Missing. Run `sendkit init --telegram-bot-token <token>`"}
-[✓] Telegram Bot API Connectivity: Reachable (api.telegram.org:443)
+[${hasTg ? "✓" : "!"}] Telegram Bot Token: ${hasTg ? "Configured in ~/.config/sendkit/config.json" : "Missing. Run `sendkit init --telegram-bot-token <token>`"}
+[${hasGh ? "✓" : "!"}] GitHub PAT Token: ${hasGh ? "Configured in ~/.config/sendkit/config.json" : "Missing. Run `sendkit init --github-token <token>`"}
+[✓] Telegram API Connectivity: Reachable (api.telegram.org:443)
+[✓] GitHub REST API Connectivity: Reachable (api.github.com:443)
 [✓] MCP Stdio Compatibility: Ready (@modelcontextprotocol/sdk)
 [✓] Skill Definition: Valid (skills/sendkit/SKILL.md)`,
       });
@@ -345,11 +528,10 @@ Commands:
         return res.json({
           ok: false,
           exitCode: 1,
-          output: "Telegram bot token is required. Run `sendkit init`.",
+          output: "Telegram bot token is required. Run `sendkit init --telegram-bot-token <token>`.",
         });
       }
 
-      // Execute send logic
       let result;
       if (token === "demo_bot_token" || token.startsWith("sim_")) {
         result = {
@@ -375,6 +557,111 @@ Commands:
           ok: true,
           chatId,
           messageId: data.result.message_id,
+        };
+      }
+
+      if (isJson) {
+        return res.json({
+          ok: true,
+          exitCode: 0,
+          output: JSON.stringify(result, null, 2),
+        });
+      }
+
+      return res.json({
+        ok: true,
+        exitCode: 0,
+        output: JSON.stringify(result),
+      });
+    }
+
+    if (sub === "github-issue") {
+      const isJson = actualArgs.includes("--json");
+      let argsToParse = actualArgs.slice(2).filter((a) => a !== "--json");
+
+      let tokenOverride: string | undefined;
+      const tokenIdx = argsToParse.indexOf("--token");
+      if (tokenIdx !== -1 && argsToParse[tokenIdx + 1]) {
+        tokenOverride = argsToParse[tokenIdx + 1];
+        argsToParse.splice(tokenIdx, 2);
+      }
+
+      let labels: string[] | undefined;
+      const labelIdx = argsToParse.indexOf("--labels");
+      if (labelIdx !== -1) {
+        labels = argsToParse.slice(labelIdx + 1);
+        argsToParse = argsToParse.slice(0, labelIdx);
+      }
+
+      if (argsToParse.length < 2) {
+        return res.json({
+          ok: false,
+          exitCode: 1,
+          output: "error: missing required arguments 'repo', 'title'\nUsage: sendkit github-issue <repo> <title> [body] [--labels <labels...>] [--token <token>] [--json]",
+        });
+      }
+
+      const repo = argsToParse[0];
+      const title = argsToParse[1];
+      const body = argsToParse.slice(2).join(" ") || undefined;
+      const token = tokenOverride || serverCliConfig.githubToken || process.env.GITHUB_TOKEN;
+
+      if (!token) {
+        return res.json({
+          ok: false,
+          exitCode: 1,
+          output: "GitHub token is required. Run `sendkit init --github-token <token>` or supply --token <token>.",
+        });
+      }
+
+      const parts = repo.split("/");
+      if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        return res.json({
+          ok: false,
+          exitCode: 1,
+          output: `error: invalid repository format '${repo}'. Expected 'owner/repo'.`,
+        });
+      }
+      const [owner, repoName] = parts;
+
+      let result;
+      if (token === "demo_github_token" || token.startsWith("sim_")) {
+        const num = Math.floor(10 + Math.random() * 90);
+        result = {
+          ok: true,
+          issueNumber: num,
+          issueUrl: `https://github.com/${owner}/${repoName}/issues/${num}`,
+          repo,
+          title,
+          state: "open",
+        };
+      } else {
+        const ghRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/issues`, {
+          method: "POST",
+          headers: {
+            "Accept": "application/vnd.github+json",
+            "Authorization": `Bearer ${token}`,
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "SendKit-Studio/0.1.4",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title, body, labels }),
+        });
+        const ghData = await ghRes.json();
+        if (!ghRes.ok) {
+          return res.json({
+            ok: false,
+            exitCode: 1,
+            output: `Error (${ghRes.status}): ${ghData.message || "Failed to create issue"}`,
+          });
+        }
+        result = {
+          ok: true,
+          issueNumber: ghData.number,
+          issueUrl: ghData.html_url,
+          repo,
+          title: ghData.title,
+          state: ghData.state,
         };
       }
 
@@ -539,6 +826,116 @@ app.post("/api/mcp/jsonrpc", async (req, res) => {
               {
                 type: "text",
                 text: `Sent Telegram message ${output.messageId} to chat ${output.chatId}`,
+              },
+            ],
+            structuredContent: output,
+          },
+        });
+      }
+
+      if (toolName === "github_issue") {
+        const repo = toolArgs.repo;
+        const title = toolArgs.title;
+        const body = toolArgs.body;
+        const labels = toolArgs.labels;
+        const effectiveToken = toolArgs.githubToken || serverCliConfig.githubToken || process.env.GITHUB_TOKEN;
+
+        if (!repo || !title) {
+          return res.json({
+            jsonrpc: "2.0",
+            id: jsonrpcId,
+            error: {
+              code: -32602,
+              message: "Invalid params: 'repo' and 'title' are required in arguments",
+            },
+          });
+        }
+
+        const parts = String(repo).split("/");
+        if (parts.length !== 2 || !parts[0] || !parts[1]) {
+          return res.json({
+            jsonrpc: "2.0",
+            id: jsonrpcId,
+            isError: true,
+            content: [
+              {
+                type: "text",
+                text: `Error: repo must be in 'owner/repo' format, got '${repo}'`,
+              },
+            ],
+          });
+        }
+        const [owner, repoName] = parts;
+
+        if (!effectiveToken) {
+          return res.json({
+            jsonrpc: "2.0",
+            id: jsonrpcId,
+            isError: true,
+            content: [
+              {
+                type: "text",
+                text: "Error: GITHUB_TOKEN is required. Configure it in your MCP client environment.",
+              },
+            ],
+          });
+        }
+
+        let output;
+        if (effectiveToken === "demo_github_token" || effectiveToken.startsWith("sim_")) {
+          const num = Math.floor(10 + Math.random() * 90);
+          output = {
+            ok: true,
+            issueNumber: num,
+            issueUrl: `https://github.com/${owner}/${repoName}/issues/${num}`,
+            repo,
+            title,
+            state: "open",
+          };
+        } else {
+          const ghRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/issues`, {
+            method: "POST",
+            headers: {
+              "Accept": "application/vnd.github+json",
+              "Authorization": `Bearer ${effectiveToken}`,
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "SendKit-Studio/0.1.4",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ title, body, labels }),
+          });
+          const ghData = await ghRes.json();
+          if (!ghRes.ok) {
+            return res.json({
+              jsonrpc: "2.0",
+              id: jsonrpcId,
+              isError: true,
+              content: [
+                {
+                  type: "text",
+                  text: `GitHub API error (${ghRes.status}): ${ghData.message || "Failed to create issue"}`,
+                },
+              ],
+            });
+          }
+          output = {
+            ok: true,
+            issueNumber: ghData.number,
+            issueUrl: ghData.html_url,
+            repo,
+            title: ghData.title,
+            state: ghData.state,
+          };
+        }
+
+        return res.json({
+          jsonrpc: "2.0",
+          id: jsonrpcId,
+          result: {
+            content: [
+              {
+                type: "text",
+                text: `Created GitHub issue #${output.issueNumber} in ${output.repo}: ${output.issueUrl}`,
               },
             ],
             structuredContent: output,
