@@ -3,6 +3,7 @@ import { ActiveTab, TelegramBotInfo } from './types';
 import { Header } from './components/Header';
 import { ArchitectureView } from './components/ArchitectureView';
 import { TelegramTester } from './components/TelegramTester';
+import { GithubIssueTester } from './components/GithubIssueTester';
 import { McpInspector } from './components/McpInspector';
 import { CliTerminal } from './components/CliTerminal';
 import { RemoteMcpExplorer } from './components/RemoteMcpExplorer';
@@ -37,6 +38,7 @@ export default function App() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
         {activeTab === 'overview' && <ArchitectureView />}
+        {activeTab === 'github-issues' && <GithubIssueTester />}
         {activeTab === 'telegram' && (
           <TelegramTester
             botToken={botToken}

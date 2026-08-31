@@ -82,6 +82,7 @@ export interface CustomOperation {
 
 export type ActiveTab = 
   | 'overview'
+  | 'github-issues'
   | 'telegram'
   | 'mcp-inspector'
   | 'terminal'

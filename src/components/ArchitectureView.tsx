@@ -13,17 +13,29 @@ import {
   Code2, 
   CheckCircle2, 
   Sparkles,
-  Workflow
+  Workflow,
+  ExternalLink,
+  Share2,
+  Laptop
 } from 'lucide-react';
 
 export const ArchitectureView: React.FC = () => {
   const [activeFile, setActiveFile] = useState<keyof typeof SENDKIT_SOURCE_FILES>('coreSchemas');
   const [copied, setCopied] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://ais-dev-vtsqhtxer53shjgfqw5voa-531268848020.asia-southeast1.run.app';
 
   const copyCode = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyWebUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
   };
 
   const fileDetails = {
@@ -81,6 +93,51 @@ export const ArchitectureView: React.FC = () => {
           <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed">
             SendKit establishes a unified architecture where reusable schemas and operations live exclusively in <code className="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-xs">packages/core</code>. Every other package is an adapter—preventing code drift across agents, scripts, and human developers.
           </p>
+        </div>
+
+        {/* Live Testbench Quick Bar */}
+        <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <span className="flex h-3 w-3 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>SendKit Testbench Webpage Studio</span>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">LIVE CLOUD PREVIEW</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate max-w-md">{currentUrl}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => copyWebUrl(currentUrl)}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+            >
+              {copiedUrl ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Webpage URL</span>
+                </>
+              )}
+            </button>
+            <a
+              href={currentUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-sky-500/20 transition"
+            >
+              <span>Open in New Tab</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
       </div>
 
