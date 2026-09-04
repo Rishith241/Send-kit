@@ -112,7 +112,7 @@ export const GithubIssueTester: React.FC = () => {
       setLabelsInput('enhancement, proposal');
     } else if (type === 'docs') {
       setTitle('Docs: Update RFC 9728 protected resource metadata spec');
-      setBody('### Documentation Task\nUpdate Remote MCP specification to RFC 9728 in README and interview sheets.\n\n*Created by SendKit Core*');
+      setBody('### Documentation Task\nUpdate Remote MCP specification to RFC 9728 in README and architecture guides.\n\n*Created by SendKit Core*');
       setLabelsInput('documentation');
     }
   };
